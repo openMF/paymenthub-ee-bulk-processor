@@ -280,11 +280,8 @@ public class ProcessorStartRouteService {
         String bpmn = processorStartRoute.getWorkflowForTenant(exchange.getProperty(TENANT_NAME).toString(), flowType);
 
         try {
-            logger.info("FREDa ");
-            logger.info("FREDa: tenant is < {} >  ", exchange.getProperty(TENANT_NAME).toString());
             String tenantSpecificWorkflowId = bpmn.replace("{dfspid}", exchange.getProperty(TENANT_NAME).toString());
             logger.info("Tenant specific workflow id: {}", tenantSpecificWorkflowId);
-            logger.info("FRED: tenant is < {} >  ", exchange.getProperty(TENANT_NAME).toString());
 
             String txnId = zeebeProcessStarter.startZeebeWorkflow(tenantSpecificWorkflowId, "", variables);
             if (txnId == null || txnId.isEmpty()) {

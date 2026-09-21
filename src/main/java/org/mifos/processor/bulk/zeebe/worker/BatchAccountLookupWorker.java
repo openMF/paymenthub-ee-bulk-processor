@@ -18,6 +18,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.support.DefaultExchange;
 import org.mifos.processor.bulk.camel.routes.RouteId;
+import org.mifos.processor.bulk.properties.IdentityAccountMapperProperties;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -34,12 +35,10 @@ public class BatchAccountLookupWorker extends BaseWorker {
     private CamelContext camelContext;
     @Autowired
     private ObjectMapper objectMapper;
-    @Value("${identity_account_mapper.hostname}")
-    private String identityMapperURL;
+    @Autowired
+    private IdentityAccountMapperProperties identityAccountMapperProperties;
     @Value("${bulk-processor.hostname}")
     private String bulkURL;
-    @Value("${identity_account_mapper.batch_account_lookup_callback}")
-    private String batchAccountLookupCallback;
 
     @Override
     public void setup() {
@@ -56,13 +55,15 @@ public class BatchAccountLookupWorker extends BaseWorker {
             exchange.setProperty(HEADER_REGISTERING_INSTITUTE_ID, registeringInstituteId);
             exchange.setProperty(SERVER_FILE_NAME, filename);
             exchange.setProperty(REQUEST_ID, job.getKey());
-            exchange.setProperty(CALLBACK, identityMapperURL + batchAccountLookupCallback);
+            exchange.setProperty(CALLBACK,
+                    identityAccountMapperProperties.hostname() + identityAccountMapperProperties.batchAccountLookupCallback());
 
             try {
                 logger.info("=== BATCH ACCOUNT LOOKUP WORKER DEBUG ===");
                 logger.info("Sending to ACCOUNT_LOOKUP route with registeringInstituteId: {}", registeringInstituteId);
                 logger.info("Filename: {}", filename);
-                logger.info("Callback URL: {}", identityMapperURL + batchAccountLookupCallback);
+                logger.info("Callback URL: {}",
+                        identityAccountMapperProperties.hostname() + identityAccountMapperProperties.batchAccountLookupCallback());
                 sendToCamelRoute(RouteId.ACCOUNT_LOOKUP, exchange);
                 logger.info("ACCOUNT_LOOKUP route call completed successfully");
             } catch (Exception e) {

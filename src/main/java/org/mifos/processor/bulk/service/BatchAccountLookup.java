@@ -15,11 +15,11 @@ import org.apache.camel.Exchange;
 import org.mifos.connector.common.identityaccountmapper.dto.AccountMapperRequestDTO;
 import org.mifos.connector.common.identityaccountmapper.dto.BeneficiaryDTO;
 import org.mifos.processor.bulk.connectors.service.AccountLookupService;
+import org.mifos.processor.bulk.properties.IdentityAccountMapperProperties;
 import org.mifos.processor.bulk.schema.Transaction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -33,11 +33,8 @@ public class BatchAccountLookup {
     @Autowired
     private AccountLookupService accountLookupService;
 
-    @Value("${identity_account_mapper.hostname}")
-    private String identityEndpoint;
-
-    @Value("${identity_account_mapper.batch_account_lookup}")
-    private String batchAccountLookup;
+    @Autowired
+    private IdentityAccountMapperProperties identityAccountMapperProperties;
 
     @SuppressWarnings("unchecked")
     public void doBatchAccountLookup(Exchange exchange) throws IOException {
@@ -63,8 +60,8 @@ public class BatchAccountLookup {
         exchange.getIn().setBody(requestBody);
 
         Map<String, Object> headers = exchange.getIn().getHeaders();
-        String fullUrl = identityEndpoint + batchAccountLookup;
+        String fullUrl = identityAccountMapperProperties.hostname() + identityAccountMapperProperties.batchAccountLookup();
 
-        accountLookupService.accountLookupCall(identityEndpoint, fullUrl, accountMapperRequestDTO, headers);
+        accountLookupService.accountLookupCall(identityAccountMapperProperties.hostname(), fullUrl, accountMapperRequestDTO, headers);
     }
 }

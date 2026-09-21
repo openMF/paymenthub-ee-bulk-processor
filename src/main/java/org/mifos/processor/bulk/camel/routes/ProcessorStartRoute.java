@@ -259,7 +259,6 @@ public class ProcessorStartRoute extends BaseRouteBuilder {
             logger.info("verifyData() - row {}: length={}, expected={}, content={}", rowCount, row.length, columnNames.size(), line);
             if (row.length != columnNames.size()) {
                 logger.info("verifyData() - Row invalid: length={}, expected={}", row.length, columnNames.size());
-                logger.debug("DEBUG FRED10 Row invalid {} {}", row.length, columnNames.size());
                 logger.debug("Row invalid {} {}", row.length, columnNames.size());
                 return false;
             }
@@ -275,9 +274,6 @@ public class ProcessorStartRoute extends BaseRouteBuilder {
     public String getWorkflowForTenant(String tenantId, String useCase) {
 
         for (TenantImplementation tenant : tenantImplementationProperties.getTenants()) {
-            logger.info("FRED1 Tenant id: {} ", tenant.getId());
-            logger.info("FRED1  tenandId {} ", tenantId);
-            logger.info("FRED1  useCase {} ", useCase);
             if (tenant.getId().equals(tenantId)) {
                 return tenant.getFlows().getOrDefault(useCase, "default");
             }

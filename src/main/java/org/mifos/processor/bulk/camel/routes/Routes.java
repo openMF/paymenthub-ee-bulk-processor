@@ -35,7 +35,7 @@ public class Routes extends BaseRouteBuilder {
                 // set request params
                 .setHeader("Authorization", simple("Bearer ${exchangeProperty." + OPS_APP_ACCESS_TOKEN + "}"))
                 .setHeader(HEADER_PLATFORM_TENANT_ID, simple("${exchangeProperty." + TENANT_ID + "}"))
-                .toD(operationsAppConfig.batchTransactionEndpoint).process(exchange -> {
+                .toD(operationsAppProperties.endpoints().batchTransaction()).process(exchange -> {
                     // get response body
                     JSONObject transfers = new JSONObject(exchange.getIn().getBody(String.class));
 
@@ -68,7 +68,7 @@ public class Routes extends BaseRouteBuilder {
             exchange.getIn().setHeader("batchId", exchange.getProperty(BATCH_ID));
         }).setHeader("Authorization", simple("Bearer ${exchangeProperty." + OPS_APP_ACCESS_TOKEN + "}"))
                 .setHeader(HEADER_PLATFORM_TENANT_ID, simple("${exchangeProperty." + TENANT_ID + "}"))
-                .toD(operationsAppConfig.batchTransactionEndpoint).process(exchange -> {
+                .toD(operationsAppProperties.endpoints().batchTransaction()).process(exchange -> {
                     // get response body
 
                     // check if batch is ready for sampling

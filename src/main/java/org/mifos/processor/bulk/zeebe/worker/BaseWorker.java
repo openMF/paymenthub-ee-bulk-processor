@@ -22,10 +22,10 @@ public abstract class BaseWorker {
     private ZeebeClient zeebeClient;
 
     @Autowired
-    private CsvMapper csvMapper;
+    protected CsvMapper csvMapper;
 
     @Autowired
-    private ObjectMapper objectMapper;
+    protected ObjectMapper objectMapper;
 
     @Value("${application.bucket-name}")
     private String bucketName;

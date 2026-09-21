@@ -24,8 +24,8 @@ import org.apache.camel.ProducerTemplate;
 import org.apache.camel.support.DefaultExchange;
 import org.mifos.connector.common.channel.dto.TransactionChannelRequestDTO;
 import org.mifos.connector.common.mojaloop.dto.PartyIdInfo;
+import org.mifos.processor.bulk.properties.IdentityAccountMapperProperties;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -40,12 +40,8 @@ public class AccountLookupWorker extends BaseWorker {
     private CamelContext camelContext;
     @Autowired
     private ObjectMapper objectMapper;
-    @Value("${identity_account_mapper.hostname}")
-    private String identityMapperURL;
-    @Value("${identity_account_mapper.account_lookup_callback}")
-    private String accountLookupCallback;
-    @Value("${identity_account_mapper.account_lookup}")
-    private String accountLookupEndpoint;
+    @Autowired
+    private IdentityAccountMapperProperties identityAccountMapperProperties;
 
     @Override
     public void setup() {
@@ -69,10 +65,11 @@ public class AccountLookupWorker extends BaseWorker {
             String paymentModality = requestedParty.getPartyIdType().toString();
 
             Exchange exchange = new DefaultExchange(camelContext);
-            exchange.setProperty(HOST, identityMapperURL);
+            exchange.setProperty(HOST, identityAccountMapperProperties.hostname());
             exchange.setProperty(PAYEE_IDENTITY, payeeIdentity);
             exchange.setProperty(PAYMENT_MODALITY, paymentModality);
-            exchange.setProperty(CALLBACK, identityMapperURL + accountLookupCallback);
+            exchange.setProperty(CALLBACK,
+                    identityAccountMapperProperties.hostname() + identityAccountMapperProperties.accountLookupCallback());
             exchange.setProperty(TRANSACTION_ID, existingVariables.get(TRANSACTION_ID));
             exchange.setProperty("requestId", job.getKey());
             exchange.setProperty(CHANNEL_REQUEST, channelRequest);

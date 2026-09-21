@@ -5,9 +5,8 @@ import static org.mifos.processor.bulk.zeebe.ZeebeVariables.COMPLETION_RATE;
 import static org.mifos.processor.bulk.zeebe.ZeebeVariables.TENANT_ID;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Map;
-import org.mifos.processor.bulk.OperationsAppConfig;
+import org.mifos.processor.bulk.properties.OperationsAppProperties;
 import org.mifos.processor.bulk.schema.BatchDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
@@ -20,7 +19,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 public class BatchStatusWorker extends BaseWorker {
 
     @Autowired
-    public OperationsAppConfig operationsAppConfig;
+    public OperationsAppProperties operationsAppProperties;
 
     @Override
     public void setup() {
@@ -51,14 +50,13 @@ public class BatchStatusWorker extends BaseWorker {
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
         headers.set("Platform-TenantId", tenantId);
-        String url = operationsAppConfig.batchSummaryUrl;
+        String url = operationsAppProperties.batchSummaryUrl();
 
         UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromUriString(url).queryParam("batchId", batchId);
         String finalUrl = uriBuilder.toUriString();
 
         ResponseEntity<String> response = restTemplate.exchange(finalUrl, HttpMethod.GET, new HttpEntity<>(null, headers), String.class);
         String batchAggregationResponse = response != null ? response.getBody() : null;
-        ObjectMapper objectMapper = new ObjectMapper();
         BatchDTO batchDTO = null;
         try {
             batchDTO = objectMapper.readValue(batchAggregationResponse, BatchDTO.class);

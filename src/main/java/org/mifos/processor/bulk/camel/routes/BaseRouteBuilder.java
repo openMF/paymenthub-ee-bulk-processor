@@ -9,7 +9,7 @@ import java.util.List;
 import org.apache.camel.Exchange;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.model.RouteDefinition;
-import org.mifos.processor.bulk.OperationsAppConfig;
+import org.mifos.processor.bulk.properties.OperationsAppProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,7 @@ public abstract class BaseRouteBuilder extends RouteBuilder {
     public ObjectMapper objectMapper;
 
     @Autowired
-    public OperationsAppConfig operationsAppConfig;
+    public OperationsAppProperties operationsAppProperties;
 
     @Autowired
     ZeebeClient zeebeClient;

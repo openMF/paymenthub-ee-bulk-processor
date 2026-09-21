@@ -44,11 +44,11 @@ public class OperationsAuthRoute extends BaseRouteBuilder {
          */
         getBaseExternalApiRequestRouteDefinition("access-token-fetch", HttpRequestMethod.POST)
                 .setHeader(Exchange.REST_HTTP_QUERY,
-                        simpleF("username=%s&password=%s&grant_type=%s", operationsAppConfig.username, operationsAppConfig.password,
-                                "password"))
+                        simpleF("username=%s&password=%s&grant_type=%s", operationsAppProperties.username(),
+                                operationsAppProperties.password(), "password"))
                 .setHeader("Authorization", constant("Basic Y2xpZW50Og=="))
                 .setHeader(HEADER_PLATFORM_TENANT_ID, simple("${exchangeProperty." + TENANT_ID + "}"))
-                .toD(operationsAppConfig.authUrl + "?bridgeEndpoint=true").log(LoggingLevel.INFO, "Auth response: \n\n ${body}");
+                .toD(operationsAppProperties.authUrl() + "?bridgeEndpoint=true").log(LoggingLevel.INFO, "Auth response: \n\n ${body}");
 
         /**
          * Access Token check validity and return value
