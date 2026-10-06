@@ -29,8 +29,8 @@ class ConfigurationPropertiesTest {
 
     /** Exactly what application.yaml ships, underscores and all. */
     private static String[] shippedConfig() {
-        return new String[] { "operations-app.contactpoint=https://ops-bk.mifos.gazelle.localhost",
-                "operations-app.endpoints.batch-transaction=/api/v1/batch/transactions",
+        return new String[] { "operations-app.contactpoint=https://ops-bk.mifos.gazelle.localhost", "operations-app.username=mifos",
+                "operations-app.password=password", "operations-app.endpoints.batch-transaction=/api/v1/batch/transactions",
                 "operations-app.endpoints.batch-summary=/api/v1/batch", "operations-app.endpoints.batch-aggregate=/api/v1/batch/",
                 "operations-app.endpoints.auth=/oauth/token", "identity_account_mapper.hostname=http://ph-ee-identity-account-mapper:80",
                 "identity_account_mapper.account_lookup=/beneficiary",
