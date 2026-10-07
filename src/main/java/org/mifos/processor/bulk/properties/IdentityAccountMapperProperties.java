@@ -1,6 +1,8 @@
 package org.mifos.processor.bulk.properties;
 
+import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
 
 /**
  * Everything under {@code identity_account_mapper}.
@@ -15,7 +17,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * three different names - identityURL, identityMapperURL, identityEndpoint - which is how you end up unsure whether two
  * routes are talking to the same host.
  */
+@Validated
 @ConfigurationProperties(prefix = "identity-account-mapper")
-public record IdentityAccountMapperProperties(String hostname, String accountLookup, String accountLookupCallback,
-        String batchAccountLookup, String batchAccountLookupCallback) {
+public record IdentityAccountMapperProperties(@NotNull String hostname, @NotNull String accountLookup,
+        @NotNull String accountLookupCallback, @NotNull String batchAccountLookup, @NotNull String batchAccountLookupCallback) {
 }
