@@ -34,7 +34,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
@@ -246,29 +245,28 @@ public class ProcessorStartRoute extends BaseRouteBuilder {
 
     public boolean verifyData(File file) throws IOException {
         logger.info("verifyData() - file exists: {}, file size: {}, file path: {}", file.exists(), file.length(), file.getAbsolutePath());
-        InputStream ips = new FileInputStream(file);
-        InputStreamReader ipsr = new InputStreamReader(ips);
-        BufferedReader br = new BufferedReader(ipsr);
-        String line;
-        String header = br.readLine();
-        logger.info("verifyData() - CSV header: {}", header);
-        int rowCount = 0;
-        while ((line = br.readLine()) != null) {
-            rowCount++;
-            String[] row = line.split(",");
-            logger.info("verifyData() - row {}: length={}, expected={}, content={}", rowCount, row.length, columnNames.size(), line);
-            if (row.length != columnNames.size()) {
-                logger.info("verifyData() - Row invalid: length={}, expected={}", row.length, columnNames.size());
-                logger.debug("Row invalid {} {}", row.length, columnNames.size());
-                return false;
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file)))) {
+            String line;
+            String header = br.readLine();
+            logger.info("verifyData() - CSV header: {}", header);
+            int rowCount = 0;
+            while ((line = br.readLine()) != null) {
+                rowCount++;
+                String[] row = line.split(",");
+                logger.info("verifyData() - row {}: length={}, expected={}, content={}", rowCount, row.length, columnNames.size(), line);
+                if (row.length != columnNames.size()) {
+                    logger.info("verifyData() - Row invalid: length={}, expected={}", row.length, columnNames.size());
+                    logger.debug("Row invalid {} {}", row.length, columnNames.size());
+                    return false;
+                }
+                if (!verifyRow(row)) {
+                    logger.info("verifyData() - verifyRow failed for row {}", rowCount);
+                    return false;
+                }
             }
-            if (!verifyRow(row)) {
-                logger.info("verifyData() - verifyRow failed for row {}", rowCount);
-                return false;
-            }
+            logger.info("verifyData() - SUCCESS: validated {} rows", rowCount);
+            return true;
         }
-        logger.info("verifyData() - SUCCESS: validated {} rows", rowCount);
-        return true;
     }
 
     public String getWorkflowForTenant(String tenantId, String useCase) {
@@ -291,8 +289,10 @@ public class ProcessorStartRoute extends BaseRouteBuilder {
     }
 
     public boolean verifyCsv(File csvData) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(csvData));
-        String header = br.readLine();
+        String header;
+        try (BufferedReader br = new BufferedReader(new FileReader(csvData))) {
+            header = br.readLine();
+        }
         String[] columns = new String[0];
         if (header != null) {
             columns = header.split(",");

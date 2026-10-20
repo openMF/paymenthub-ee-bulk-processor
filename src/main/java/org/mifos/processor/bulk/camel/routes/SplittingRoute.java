@@ -67,8 +67,11 @@ public class SplittingRoute extends BaseRouteBuilder {
         // Creates the sub-batch CSVs
         from("direct:create-sub-batch-file").id("direct:create-sub-batch-file").log("Creating sub-batch file").process(exchange -> {
             String filepath = exchange.getProperty(LOCAL_FILE_PATH, String.class);
-            BufferedReader reader = new BufferedReader(new FileReader(filepath));
-            String header = reader.readLine() + System.lineSeparator();
+            List<String> lines;
+            try (BufferedReader reader = new BufferedReader(new FileReader(filepath))) {
+                reader.readLine(); // header
+                lines = reader.lines().collect(Collectors.toList());
+            }
             List<Transaction> transactionList = exchange.getProperty(TRANSACTION_LIST, List.class);
             List<String> subBatchFile = new ArrayList<>();
             Set<String> distinctPayeeIds = transactionList.stream().map(Transaction::getPayeeDfspId).collect(Collectors.toSet());
@@ -101,9 +104,8 @@ public class SplittingRoute extends BaseRouteBuilder {
                     logger.info("Created sub-batch with file name {}", filename);
                     CsvSchema csvSchema = csvMapper.schemaFor(Transaction.class).withHeader();
                     File file = new File(filename);
-                    SequenceWriter writer = csvMapper.writerWithSchemaFor(Transaction.class).with(csvSchema).writeValues(file);
-                    for (Transaction transaction : transactionsForPayee) {
-                        writer.write(transaction);
+                    try (SequenceWriter writer = csvMapper.writerWithSchemaFor(Transaction.class).with(csvSchema).writeValues(file)) {
+                        writer.writeAll(transactionsForPayee);
                     }
                     subBatchFile.add(filename);
                 }
@@ -112,13 +114,6 @@ public class SplittingRoute extends BaseRouteBuilder {
                 exchange.setProperty(RESULT_TRANSACTION_LIST, transactionList);
                 exchange.setProperty(TRANSACTION_LIST, transactionList);
             } else {
-                List<String> lines = new ArrayList<>();
-                String line = null;
-                while ((line = reader.readLine()) != null) {
-                    lines.add(line);
-                }
-                reader.close();
-
                 if (lines.size() <= subBatchSize) {
                     exchange.setProperty(SUB_BATCH_CREATED, false);
                     exchange.setProperty(SERVER_SUB_BATCH_FILE_NAME_ARRAY, new ArrayList<String>());
