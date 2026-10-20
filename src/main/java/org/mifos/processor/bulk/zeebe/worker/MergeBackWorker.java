@@ -16,10 +16,21 @@ import java.util.Map;
 import org.apache.camel.Exchange;
 import org.apache.camel.support.DefaultExchange;
 import org.mifos.processor.bulk.camel.routes.RouteId;
+import org.mifos.processor.bulk.file.FileTransferService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class MergeBackWorker extends BaseWorker {
+
+    @Autowired
+    @Qualifier("awsStorage")
+    private FileTransferService fileTransferService;
+
+    @Value("${application.bucket-name}")
+    private String bucketName;
 
     @Override
     public void setup() {
@@ -50,6 +61,14 @@ public class MergeBackWorker extends BaseWorker {
                 mergeFileList.addAll(successSubBatches);
                 mergeFileList.addAll(failureSubBatches);
                 mergeFileList.addAll(subBatches);
+                // Result_ files are only written for sub-batches that go through a BULK-type payment mode
+                // (connector-bulk) or that fail; PAYMENT-type modes (e.g. MOJALOOP) never produce one. Merging a
+                // missing file throws NoSuchKey on every iteration, so drop those up front.
+                List<String> missing = mergeFileList.stream().filter(f -> !fileTransferService.fileExists(f, bucketName)).toList();
+                if (!missing.isEmpty()) {
+                    logger.info("Skipping files absent from bucket {}: {}", bucketName, missing);
+                    mergeFileList.removeAll(missing);
+                }
             }
 
             Exchange exchange = new DefaultExchange(camelContext);
@@ -63,7 +82,13 @@ public class MergeBackWorker extends BaseWorker {
 
             Boolean mergeCompletedObj = exchange.getProperty(MERGE_COMPLETED, Boolean.class);
             boolean mergeCompleted = mergeCompletedObj != null ? mergeCompletedObj : false;
-            if (mergeCompleted) {
+            if (exchange.getException() != null) {
+                // Without this the job completes with mergeCompleted=false and the BPMN loops straight back into
+                // this worker with the same list, forever. End the merge as failed instead.
+                logger.error("Merge iteration {} failed for batch {}", mergeIteration, variables.get(BATCH_ID), exchange.getException());
+                mergeCompleted = true;
+                variables.put(MERGE_FAILED, true);
+            } else if (mergeCompleted) {
                 Boolean mergeFailedObj = exchange.getProperty(MERGE_FAILED, Boolean.class);
                 variables.put(MERGE_FAILED, mergeFailedObj != null ? mergeFailedObj : false);
                 String resultFile = exchange.getProperty(RESULT_FILE, String.class);
