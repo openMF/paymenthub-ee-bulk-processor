@@ -77,6 +77,8 @@ public class AccountLookupWorker extends BaseWorker {
             exchange.setProperty(TENANT_ID, tenantId);
             exchange.setProperty(HEADER_REGISTERING_INSTITUTE_ID, existingVariables.get(HEADER_REGISTERING_INSTITUTE_ID));
             producerTemplate.send("direct:send-account-lookup", exchange);
+            // no failure variable to report here: the flow waits for the lookup callback, so make the failure visible
+            routeFailed(exchange, null);
 
             client.newCompleteCommand(job.getKey()).variables(existingVariables).send();
         }).name(String.valueOf(ACCOUNT_LOOKUP)).open();

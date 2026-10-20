@@ -50,6 +50,9 @@ public class SendCallbackWorker extends BaseWorker {
             boolean phaseReached = phaseList != null && phaseList.stream().anyMatch(p -> Integer.parseInt(p.toString()) <= completionRate);
             if (statusRetry >= maxRetry || completionRate >= completionThreshold || phaseReached) {
                 sendToCamelRoute(RouteId.SEND_CALLBACK, exchange);
+                if (routeFailed(exchange, null) && exchange.getProperty(ERROR_DESCRIPTION) == null) {
+                    exchange.setProperty(ERROR_DESCRIPTION, exchange.getException().getMessage());
+                }
             } else {
                 // No callback needed yet - eliminate any phases already passed and signal success
                 if (phaseList != null) {

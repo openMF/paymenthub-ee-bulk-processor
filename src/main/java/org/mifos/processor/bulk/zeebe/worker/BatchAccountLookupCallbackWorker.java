@@ -39,6 +39,9 @@ public class BatchAccountLookupCallbackWorker extends BaseWorker {
             exchange.setProperty("batchAccountLookupCallback", batchAccountLookupCallback);
             exchange.setProperty("workflowInstanceKey", job.getProcessInstanceKey());
             sendToCamelRoute(RouteId.ACCOUNT_LOOKUP_CALLBACK, exchange);
+            if (routeFailed(exchange, null)) {
+                variables.put(PARTY_LOOKUP_FAILED, true);
+            }
             client.newCompleteCommand(job.getKey()).variables(variables).send();
         }));
     }

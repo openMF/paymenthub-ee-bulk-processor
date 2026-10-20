@@ -37,8 +37,9 @@ public class DeDuplicationWorker extends BaseWorker {
 
             sendToCamelRoute(RouteId.DE_DUPLICATION, exchange);
 
-            boolean deDuplicationFailed = (Boolean) exchange.getProperty(DE_DUPLICATION_FAILED);
-            int duplicateTransactionCount = exchange.getProperty(DUPLICATE_TRANSACTION_COUNT, Integer.class);
+            boolean deDuplicationFailed = routeFailed(exchange, DE_DUPLICATION_FAILED);
+            Integer duplicateCountProperty = exchange.getProperty(DUPLICATE_TRANSACTION_COUNT, Integer.class);
+            int duplicateTransactionCount = duplicateCountProperty != null ? duplicateCountProperty : 0;
             if (duplicateTransactionCount > 0) {
                 // if duplicate txn exist
                 variables.put(FAILED_TRANSACTION_FILE, exchange.getProperty(FAILED_TRANSACTION_FILE, String.class));
