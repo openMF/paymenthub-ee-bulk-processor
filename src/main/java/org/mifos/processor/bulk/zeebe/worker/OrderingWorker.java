@@ -37,13 +37,8 @@ public class OrderingWorker extends BaseWorker {
                 String filename = (String) variables.get(FILE_NAME);
                 exchange.setProperty(SERVER_FILE_NAME, filename);
 
-                try {
-                    sendToCamelRoute(RouteId.ORDERING, exchange);
-                    assert !exchange.getProperty(ORDERING_FAILED, Boolean.class);
-                } catch (Exception e) {
-                    variables.put(ORDERING_FAILED, true);
-                }
-                variables.put(ORDERING_FAILED, false);
+                sendToCamelRoute(RouteId.ORDERING, exchange);
+                variables.put(ORDERING_FAILED, routeFailed(exchange, ORDERING_FAILED));
                 variables.put(ORDERED_BY, exchange.getProperty(ORDERED_BY));
             }
             client.newCompleteCommand(job.getKey()).variables(variables).send();

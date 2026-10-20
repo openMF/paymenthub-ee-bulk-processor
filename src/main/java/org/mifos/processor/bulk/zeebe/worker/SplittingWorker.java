@@ -50,12 +50,8 @@ public class SplittingWorker extends BaseWorker {
 
             exchange.setProperty(SUB_BATCH_DETAILS, new ArrayList<SubBatchEntity>());
 
-            try {
-                sendToCamelRoute(RouteId.SPLITTING, exchange);
-                assert !exchange.getProperty(SPLITTING_FAILED, Boolean.class);
-            } catch (Exception e) {
-                variables.put(SPLITTING_FAILED, true);
-            }
+            sendToCamelRoute(RouteId.SPLITTING, exchange);
+            boolean splittingFailed = routeFailed(exchange, SPLITTING_FAILED);
 
             Boolean subBatchCreated = exchange.getProperty(SUB_BATCH_CREATED, Boolean.class);
             List<String> serverSubBatchFileList = exchange.getProperty(SERVER_SUB_BATCH_FILE_NAME_ARRAY, List.class);
@@ -65,7 +61,7 @@ public class SplittingWorker extends BaseWorker {
                 subBatchCreated = false;
             }
 
-            variables.put(SPLITTING_FAILED, false);
+            variables.put(SPLITTING_FAILED, splittingFailed);
             variables.put(SUB_BATCHES, serverSubBatchFileList);
             variables.put(SUB_BATCH_DETAILS, exchange.getProperty(SUB_BATCH_DETAILS, ArrayList.class));
             variables.put(INIT_SUCCESS_SUB_BATCHES, new ArrayList<String>());

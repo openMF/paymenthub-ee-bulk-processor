@@ -55,4 +55,17 @@ public abstract class BaseWorker {
         producerTemplate.send(routeId.getValue(), exchange);
     }
 
+    /**
+     * {@code producerTemplate.send} does not throw: a failing route leaves its exception on the exchange. Returns true
+     * (and logs the exception) if the route failed that way, or if it set {@code failedProperty} to true.
+     */
+    protected boolean routeFailed(Exchange exchange, String failedProperty) {
+        Exception exception = exchange.getException();
+        if (exception != null) {
+            logger.error("Route for exchange {} failed: {}", exchange.getExchangeId(), exception.getMessage(), exception);
+            return true;
+        }
+        return failedProperty != null && Boolean.TRUE.equals(exchange.getProperty(failedProperty, Boolean.class));
+    }
+
 }
