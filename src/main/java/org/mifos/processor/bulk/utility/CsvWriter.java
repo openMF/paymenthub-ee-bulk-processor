@@ -5,6 +5,8 @@ import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
 
 public final class CsvWriter {
@@ -24,10 +26,25 @@ public final class CsvWriter {
         if (!file.exists()) {
             file.createNewFile();
         }
-        SequenceWriter writer = csvMapper.writerWithSchemaFor(tClass).with(csvSchema).writeValues(file);
-        for (T object : data) {
-            writer.write(object);
+        if (data.isEmpty()) {
+            // Jackson writes the header together with the first row, so an empty list would leave a 0-byte file
+            Files.writeString(file.toPath(), overrideHeader ? header(csvSchema) : "", StandardCharsets.UTF_8);
+            return;
         }
+        try (SequenceWriter writer = csvMapper.writerWithSchemaFor(tClass).with(csvSchema).writeValues(file)) {
+            writer.writeAll(data);
+        }
+    }
+
+    private static String header(CsvSchema csvSchema) {
+        StringBuilder header = new StringBuilder();
+        for (CsvSchema.Column column : csvSchema) {
+            if (header.length() > 0) {
+                header.append(csvSchema.getColumnSeparator());
+            }
+            header.append(column.getName());
+        }
+        return header.append(csvSchema.getLineSeparator()).toString();
     }
 
 }
