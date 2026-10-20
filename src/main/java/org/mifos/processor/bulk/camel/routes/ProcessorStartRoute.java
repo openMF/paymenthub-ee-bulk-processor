@@ -253,7 +253,7 @@ public class ProcessorStartRoute extends BaseRouteBuilder {
             while ((line = br.readLine()) != null) {
                 rowCount++;
                 String[] row = line.split(",");
-                logger.info("verifyData() - row {}: length={}, expected={}, content={}", rowCount, row.length, columnNames.size(), line);
+                logger.debug("verifyData() - row {}: length={}, expected={}, content={}", rowCount, row.length, columnNames.size(), line);
                 if (row.length != columnNames.size()) {
                     logger.info("verifyData() - Row invalid: length={}, expected={}", row.length, columnNames.size());
                     logger.debug("Row invalid {} {}", row.length, columnNames.size());
@@ -264,7 +264,8 @@ public class ProcessorStartRoute extends BaseRouteBuilder {
                     return false;
                 }
             }
-            logger.info("verifyData() - SUCCESS: validated {} rows", rowCount);
+            // see verifyRow: say once per file that rows were not validated, instead of once per row
+            logger.warn("verifyData() - row-level validation is disabled; accepted {} rows after checking column counts only", rowCount);
             return true;
         }
     }
@@ -284,7 +285,6 @@ public class ProcessorStartRoute extends BaseRouteBuilder {
         // Example bug: When it sees "MSISDN" at position 3, it does indexOf("MSISDN") which returns 0,
         // then checks row[1] (the UUID request_id) instead of row[4] (the actual phone number)
         // TODO: Rewrite this to use column positions from columnNames instead of searching values
-        logger.info("verifyRow() - VALIDATION DISABLED - row accepted");
         return true;
     }
 
