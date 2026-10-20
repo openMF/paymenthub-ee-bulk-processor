@@ -126,11 +126,15 @@ public class InitSubBatchRoute extends BaseRouteBuilder {
                     Map<String, Object> variables = exchange.getProperty(ZEEBE_VARIABLE, Map.class);
                     variables.put(PAYMENT_MODE, paymentMode);
                     variables.put(DEBULKINGDFSPID, mapping.getDebulkingDfspid() == null ? tenantName : mapping.getDebulkingDfspid());
-                    if (isPartyLookupEnabled && !(Boolean) variables.get(PARTY_LOOKUP_FAILED)) {
+                    // Only files split by party lookup (SplittingRoute, batchAccountLookup) are named
+                    // <uuid>_sub-batch-<payeeDfspId>.csv; count-split files are <uuid>_sub-batch-<n>.csv, where the
+                    // same regex would yield "1", "2", ... as the payee DFSP id.
+                    boolean splitByPartyLookup = isPartyLookupEnabled && !Boolean.TRUE.equals(variables.get(PARTY_LOOKUP_FAILED))
+                            && Boolean.TRUE.equals(variables.get("batchAccountLookup"));
+                    if (splitByPartyLookup) {
                         String filename = exchange.getProperty(SERVER_FILE_NAME).toString();
                         String regex = ".*_sub-batch-([\\w-]+)\\.csv"; // payee DFSP Id for sub batch are extracted from
-                                                                       // the sub batch file name when party lookup is
-                                                                       // enabled and it is successful
+                                                                       // the sub batch file name
                         Pattern pattern = Pattern.compile(regex);
                         Matcher matcher = pattern.matcher(filename);
 
