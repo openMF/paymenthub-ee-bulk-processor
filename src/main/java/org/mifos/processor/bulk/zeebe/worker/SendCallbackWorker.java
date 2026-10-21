@@ -16,6 +16,7 @@ import static org.mifos.processor.bulk.zeebe.ZeebeVariables.PHASES;
 import static org.mifos.processor.bulk.zeebe.ZeebeVariables.PHASE_COUNT;
 import static org.mifos.processor.bulk.zeebe.ZeebeVariables.RETRY;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import org.apache.camel.Exchange;
@@ -41,15 +42,29 @@ public class SendCallbackWorker extends BaseWorker {
             exchange.setProperty(PHASE_COUNT, variables.get(PHASE_COUNT));
             exchange.setProperty(BATCH_ID, variables.get(BATCH_ID));
             exchange.setProperty(CLIENT_CORRELATION_ID, variables.get(CLIENT_CORRELATION_ID));
-            Integer maxRetry = Integer.parseInt(variables.get(MAX_STATUS_RETRY).toString());
-            Integer completionRate = Integer.parseInt(variables.get(COMPLETION_RATE).toString());
-            Integer completionThreshold = Integer.parseInt(variables.get(COMPLETION_THRESHOLD).toString());
-            Integer statusRetry = Integer.parseInt(variables.get(RETRY).toString());
+            int maxRetry;
+            int completionRate;
+            int completionThreshold;
+            int statusRetry;
+            try {
+                maxRetry = intVariable(variables, MAX_STATUS_RETRY, null);
+                completionThreshold = intVariable(variables, COMPLETION_THRESHOLD, null);
+                // same defaults as AggregateWorker, which sets both
+                completionRate = intVariable(variables, COMPLETION_RATE, 0);
+                statusRetry = intVariable(variables, RETRY, 0);
+            } catch (IllegalArgumentException e) {
+                logger.error("Cannot send batch callback for job {}: {}", job.getKey(), e.getMessage());
+                client.newFailCommand(job.getKey()).retries(0).errorMessage(e.getMessage()).send();
+                return;
+            }
             @SuppressWarnings("unchecked")
             List<Object> phaseList = (List<Object>) variables.get(PHASES);
             boolean phaseReached = phaseList != null && phaseList.stream().anyMatch(p -> Integer.parseInt(p.toString()) <= completionRate);
             if (statusRetry >= maxRetry || completionRate >= completionThreshold || phaseReached) {
                 sendToCamelRoute(RouteId.SEND_CALLBACK, exchange);
+                if (routeFailed(exchange, null) && exchange.getProperty(ERROR_DESCRIPTION) == null) {
+                    exchange.setProperty(ERROR_DESCRIPTION, exchange.getException().getMessage());
+                }
             } else {
                 // No callback needed yet - eliminate any phases already passed and signal success
                 if (phaseList != null) {
@@ -90,6 +105,25 @@ public class SendCallbackWorker extends BaseWorker {
                     exchange.getProperty(CALLBACK_RESPONSE_CODE));
             client.newCompleteCommand(job.getKey()).variables(variables).send();
         });
+    }
+
+    /**
+     * Reads a numeric job variable. Accepts integers and decimals ("50.0", as BatchStatusWorker sets completionRate).
+     * Throws IllegalArgumentException naming the variable if it is missing (and has no default) or not a number.
+     */
+    static int intVariable(Map<String, Object> variables, String name, Integer defaultValue) {
+        Object value = variables.get(name);
+        if (value == null) {
+            if (defaultValue != null) {
+                return defaultValue;
+            }
+            throw new IllegalArgumentException("Missing job variable " + name);
+        }
+        try {
+            return new BigDecimal(value.toString().trim()).intValue();
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Job variable " + name + " is not a number: " + value, e);
+        }
     }
 
 }

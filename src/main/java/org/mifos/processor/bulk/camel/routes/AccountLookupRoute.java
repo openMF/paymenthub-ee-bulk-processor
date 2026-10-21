@@ -68,7 +68,7 @@ public class AccountLookupRoute extends BaseRouteBuilder {
             logger.info("=== ACCOUNT LOOKUP ROUTE DEBUG ===");
             logger.info("Building beneficiary list from {} transactions", transactionList != null ? transactionList.size() : 0);
             transactionList.forEach(transaction -> {
-                logger.info("Adding beneficiary - payeeIdentity: {}, paymentMode: {}", transaction.getPayeeIdentifier(),
+                logger.debug("Adding beneficiary - payeeIdentity: {}, paymentMode: {}", transaction.getPayeeIdentifier(),
                         transaction.getPaymentMode());
                 beneficiaryDTOList.add(new BeneficiaryDTO(transaction.getPayeeIdentifier(), "", "", ""));
             });

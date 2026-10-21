@@ -33,14 +33,9 @@ public class FormattingWorker extends BaseWorker {
             Exchange exchange = new DefaultExchange(camelContext);
             exchange.setProperty(SERVER_FILE_NAME, filename);
 
-            try {
-                sendToCamelRoute(RouteId.FORMATTING, exchange);
-                assert !exchange.getProperty(FORMATTING_FAILED, Boolean.class);
-            } catch (Exception e) {
-                variables.put(FORMATTING_FAILED, true);
-            }
+            sendToCamelRoute(RouteId.FORMATTING, exchange);
 
-            variables.put(FORMATTING_FAILED, false);
+            variables.put(FORMATTING_FAILED, routeFailed(exchange, FORMATTING_FAILED));
             variables.put(FORMATTING_STANDARD, exchange.getProperty(FORMATTING_STANDARD));
 
             client.newCompleteCommand(job.getKey()).variables(variables).send();

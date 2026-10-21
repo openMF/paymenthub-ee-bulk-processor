@@ -65,7 +65,11 @@ public class BatchAccountLookupWorker extends BaseWorker {
                 logger.info("Callback URL: {}",
                         identityAccountMapperProperties.hostname() + identityAccountMapperProperties.batchAccountLookupCallback());
                 sendToCamelRoute(RouteId.ACCOUNT_LOOKUP, exchange);
-                logger.info("ACCOUNT_LOOKUP route call completed successfully");
+                if (routeFailed(exchange, null)) {
+                    variables.put(PARTY_LOOKUP_FAILED, true);
+                } else {
+                    logger.info("ACCOUNT_LOOKUP route call completed successfully");
+                }
             } catch (Exception e) {
                 logger.error("=== ACCOUNT LOOKUP FAILED ===");
                 logger.error("Exception calling ACCOUNT_LOOKUP route: " + e.getMessage(), e);
