@@ -18,4 +18,6 @@ public interface FileTransferService {
 
     void deleteFile(String fileName, String bucketName);
 
+    boolean fileExists(String fileName, String bucketName);
+
 }
