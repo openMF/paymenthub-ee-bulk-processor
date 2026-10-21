@@ -83,4 +83,9 @@ public class AwsFileTransferImpl implements FileTransferService {
         }
         return convertedFile;
     }
+
+    @Override
+    public boolean fileExists(String fileName, String bucketName) {
+        return s3Client.doesObjectExist(bucketName, fileName);
+    }
 }

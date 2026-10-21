@@ -85,4 +85,8 @@ public class AzureFileTransferImpl implements FileTransferService {
         client.containerName(bucketName).blobName(fileName).buildClient().delete();
     }
 
+    @Override
+    public boolean fileExists(String fileName, String bucketName) {
+        return client.containerName(bucketName).blobName(fileName).buildClient().exists();
+    }
 }
