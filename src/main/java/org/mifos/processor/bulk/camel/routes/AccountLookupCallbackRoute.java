@@ -15,7 +15,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.mifos.processor.bulk.schema.BatchAccountLookupResponseDTO;
 import org.mifos.processor.bulk.schema.BeneficiaryDTO;
 import org.mifos.processor.bulk.schema.Transaction;
@@ -29,8 +28,13 @@ public class AccountLookupCallbackRoute extends BaseRouteBuilder {
 
     @Autowired
     private ZeebeClient zeebeClient;
-    private Integer totalApprovedAmount;
-    private Integer totalApprovedCount;
+
+    /**
+     * Count and amount of one callback's approved transactions. Returned rather than kept in fields: this route is a
+     * singleton, and callbacks for different batches run at the same time.
+     */
+    public record ApprovedTotals(int count, int amount) {
+    }
 
     @Override
     @SuppressWarnings("unchecked")
@@ -49,16 +53,16 @@ public class AccountLookupCallbackRoute extends BaseRouteBuilder {
             List<Transaction> updatedTransactionList = new ArrayList<>();
             Map<String, Object> variables = new HashMap<>();
 
-            updateTransactionStatus(transactionList, batchAccountLookupCallback.getBeneficiaryDTOList(), transactionResultList,
-                    updatedTransactionList);
-            exchange.setProperty(PARTY_LOOKUP_SUCCESSFUL_TRANSACTION_AMOUNT, totalApprovedAmount);
-            exchange.setProperty(PARTY_LOOKUP_SUCCESSFUL_TRANSACTION_COUNT, totalApprovedCount);
+            ApprovedTotals approved = updateTransactionStatus(transactionList, batchAccountLookupCallback.getBeneficiaryDTOList(),
+                    transactionResultList, updatedTransactionList);
+            exchange.setProperty(PARTY_LOOKUP_SUCCESSFUL_TRANSACTION_AMOUNT, approved.amount());
+            exchange.setProperty(PARTY_LOOKUP_SUCCESSFUL_TRANSACTION_COUNT, approved.count());
             exchange.setProperty(RESULT_TRANSACTION_LIST, transactionResultList);
             exchange.setProperty(RESULT_FILE, resultFile);
             exchange.setProperty(TRANSACTION_LIST, updatedTransactionList);
             Long workflowInstanceKey = Long.valueOf(exchange.getProperty("workflowInstanceKey").toString());
-            variables.put(PARTY_LOOKUP_SUCCESSFUL_TRANSACTION_AMOUNT, totalApprovedAmount);
-            variables.put(PARTY_LOOKUP_SUCCESSFUL_TRANSACTION_COUNT, totalApprovedCount);
+            variables.put(PARTY_LOOKUP_SUCCESSFUL_TRANSACTION_AMOUNT, approved.amount());
+            variables.put(PARTY_LOOKUP_SUCCESSFUL_TRANSACTION_COUNT, approved.count());
             if (zeebeClient != null) {
 
                 zeebeClient.newSetVariablesCommand(workflowInstanceKey).variables(variables).send().join();
@@ -72,22 +76,19 @@ public class AccountLookupCallbackRoute extends BaseRouteBuilder {
                 .to("direct:update-result-file").to("direct:upload-file");
     }
 
-    public List<TransactionResult> updateTransactionStatus(List<Transaction> transactionList,
-            List<BeneficiaryDTO> batchAccountLookupResponseDTO, List<TransactionResult> transactionResultList,
-            List<Transaction> updatedTransactionList) {
-        totalApprovedCount = 0;
-        totalApprovedAmount = 0;
-        AtomicInteger count = new AtomicInteger(totalApprovedCount);
-        AtomicInteger amount = new AtomicInteger(totalApprovedAmount);
+    public ApprovedTotals updateTransactionStatus(List<Transaction> transactionList, List<BeneficiaryDTO> batchAccountLookupResponseDTO,
+            List<TransactionResult> transactionResultList, List<Transaction> updatedTransactionList) {
+        int count = 0;
+        int amount = 0;
 
-        transactionList.forEach(transaction -> {
+        for (Transaction transaction : transactionList) {
             Optional<BeneficiaryDTO> matchingBeneficiary = batchAccountLookupResponseDTO.stream()
                     .filter(beneficiary -> transaction.getPayeeIdentifier().equals(beneficiary.getPayeeIdentity())).findFirst();
 
             if (matchingBeneficiary.isPresent()) {
-                count.incrementAndGet(); // Increment the count atomically
+                count++;
                 try {
-                    amount.addAndGet(Integer.parseInt(transaction.getAmount()));
+                    amount += Integer.parseInt(transaction.getAmount());
                 } catch (NumberFormatException e) {
                     logger.error(e.getMessage());
                 }
@@ -104,11 +105,8 @@ public class AccountLookupCallbackRoute extends BaseRouteBuilder {
                 transactionResult.setStatus("Failed");
                 transactionResultList.add(transactionResult);
             }
-        });
-        totalApprovedCount = count.get();
-        totalApprovedAmount = amount.get();
-
-        return transactionResultList;
+        }
+        return new ApprovedTotals(count, amount);
     }
 
 }
