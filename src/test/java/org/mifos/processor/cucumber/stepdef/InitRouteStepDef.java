@@ -16,6 +16,11 @@ import org.mifos.processor.bulk.schema.Transaction;
 
 public class InitRouteStepDef extends BaseStepDef {
 
+    private static final String AMOUNT = "100";
+    private static final String CURRENCY = "INR";
+    private static final String PAYER = "1234567890";
+    private static final String PAYEE = "0987654321";
+
     @Given("I can load camel context")
     public void loadCamelContext() {
         context.start();
@@ -53,13 +58,13 @@ public class InitRouteStepDef extends BaseStepDef {
             transaction.setId(0);
             transaction.setRequestId(UUID.randomUUID().toString());
             transaction.setPaymentMode(paymentMode);
-            transaction.setAmount("100");
+            transaction.setAmount(AMOUNT);
             transaction.setPayerIdentifierType("MSISDN");
             transaction.setPayeeIdentifierType("MSISDN");
-            transaction.setPayerIdentifier("1234567890");
-            transaction.setPayeeIdentifier("0987654321");
-            transaction.setCurrency("INR");
-            exchange.setProperty(TRANSACTION_LIST_ELEMENT, new Transaction());
+            transaction.setPayerIdentifier(PAYER);
+            transaction.setPayeeIdentifier(PAYEE);
+            transaction.setCurrency(CURRENCY);
+            exchange.setProperty(TRANSACTION_LIST_ELEMENT, transaction);
 
         });
 
@@ -76,7 +81,10 @@ public class InitRouteStepDef extends BaseStepDef {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        assertThat(gsmaTransaction).isNotNull();
+        assertThat(gsmaTransaction.getAmount()).isEqualTo(AMOUNT);
+        assertThat(gsmaTransaction.getCurrency()).isEqualTo(CURRENCY);
+        assertThat(gsmaTransaction.getDebitParty()[0].getValue()).isEqualTo(PAYER);
+        assertThat(gsmaTransaction.getCreditParty()[0].getValue()).isEqualTo(PAYEE);
     }
 
     @And("The body should be of MOJALOOP parcelable")
@@ -90,6 +98,9 @@ public class InitRouteStepDef extends BaseStepDef {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-        assertThat(payload).isNotNull();
+        assertThat(payload.getAmount().getAmount()).isEqualTo(AMOUNT);
+        assertThat(payload.getAmount().getCurrency()).isEqualTo(CURRENCY);
+        assertThat(payload.getPayer().getPartyIdInfo().getPartyIdentifier()).isEqualTo(PAYER);
+        assertThat(payload.getPayee().getPartyIdInfo().getPartyIdentifier()).isEqualTo(PAYEE);
     }
 }
