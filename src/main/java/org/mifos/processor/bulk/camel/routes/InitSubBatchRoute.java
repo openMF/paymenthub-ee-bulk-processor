@@ -149,7 +149,9 @@ public class InitSubBatchRoute extends BaseRouteBuilder {
                     exchange.setProperty(INIT_SUB_BATCH_FAILED, false);
                 })
                 // if type of payment mode is payment todo // else case or else if case ?
-                .otherwise().loop(simple("${exchangeProperty." + TRANSACTION_LIST_LENGTH + "}")).process(exchange -> {
+                // The loop reuses one exchange, so the flag starts false here and only a failed call sets it.
+                .otherwise().setProperty(INIT_SUB_BATCH_FAILED, constant(false))
+                .loop(simple("${exchangeProperty." + TRANSACTION_LIST_LENGTH + "}")).process(exchange -> {
                     int index = exchange.getProperty(Exchange.LOOP_INDEX, Integer.class);
                     List<Transaction> transactionList = exchange.getProperty(TRANSACTION_LIST, List.class);
                     Transaction transaction = transactionList.get(index);
@@ -174,14 +176,13 @@ public class InitSubBatchRoute extends BaseRouteBuilder {
                 // this payload variable returns the body for respective payment modes
                 .setBody(simple("${exchangeProperty.body}"));
 
-        // Loops through each transaction and start the respective workflow
+        // Called once per transaction in the loop above. A non-200 marks the whole sub-batch as failed; a later 200
+        // must not clear it, or only the last transaction's status would count.
         from("direct:external-api-response-handler").id("direct:external-api-response-handler")
-                .log("Starting route direct:external-api-response-handler").choice().when(header("CamelHttpResponseCode").isEqualTo(200))
-                .process(exchange -> {
-                    logger.info("INIT_SUB_BATCH_FAILED is false");
-                    exchange.setProperty(INIT_SUB_BATCH_FAILED, false);
-                }).otherwise().process(exchange -> {
-                    logger.info("INIT_SUB_BATCH_FAILED is false");
+                .log("Starting route direct:external-api-response-handler").choice()
+                .when(header(Exchange.HTTP_RESPONSE_CODE).isNotEqualTo(200)).process(exchange -> {
+                    logger.warn("Transaction {} failed with HTTP status {}, INIT_SUB_BATCH_FAILED is true",
+                            exchange.getProperty(REQUEST_ID), exchange.getIn().getHeader(Exchange.HTTP_RESPONSE_CODE));
                     exchange.setProperty(INIT_SUB_BATCH_FAILED, true);
                 }).endChoice();
 
