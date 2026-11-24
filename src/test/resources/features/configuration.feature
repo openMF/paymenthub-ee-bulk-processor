@@ -10,9 +10,9 @@ Feature: configuration test
   Scenario: Bulk connector bpmn name test
     Given Application context is loaded
     When I have payment mode "SLCB"
-    And I have tenant as "gorilla"
+    And I have tenant as "greenbank"
     And I should be able fetch the mapping for mode "SLCB"
-    Then I should get the bulk connector bpmn name "bulk_connector_slcb-gorilla"
+    Then I should get the bulk connector bpmn name "bulk_connector_slcb-greenbank"
 
   Scenario: External api payload config test
     Given Application context is loaded

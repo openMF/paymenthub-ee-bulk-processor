@@ -253,9 +253,3 @@ bpmns:
     - id: "bluebank"
       flows:
         batch-transactions: "bulk_processor-{dfspid}"
-    # - id: "rhino"
-    #   flows:
-    #     batch-transactions: "bulk_processor_account_lookup-{dfspid}"
-    # - id: "lion"
-    #   flows:
-    #     batch-transactions: "bulk_processor-{dfspid}"
