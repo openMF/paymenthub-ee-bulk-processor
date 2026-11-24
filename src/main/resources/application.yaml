@@ -18,6 +18,9 @@ kafka:
   topic:
     gsma:
       name: gsma
+      # Tenant that starts the international remittance flow for a GSMA topic message, and the FSP it pays
+      payer-tenant: "greenbank"
+      payee-fsp: "bluebank"
     slcb:
       name: slcb
 
