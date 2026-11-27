@@ -40,6 +40,12 @@ public class Consumers {
     @Value("${bpmn.flows.international-remittance-payer}")
     private String internationalRemittancePayer;
 
+    @Value("${kafka.topic.gsma.payer-tenant}")
+    private String gsmaPayerTenant;
+
+    @Value("${kafka.topic.gsma.payee-fsp}")
+    private String gsmaPayeeFsp;
+
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -50,13 +56,13 @@ public class Consumers {
     public void listenTopicGsma(String message) throws JsonProcessingException {
         log.debug("Received Message in topic GSMA and group group_id: {}", message);
         TransactionOlder transaction = objectMapper.readValue(message, TransactionOlder.class);
-        String tenantId = "ibank-usa";
+        String tenantId = gsmaPayerTenant;
 
         GSMATransaction gsmaChannelRequest = new GSMATransaction();
         gsmaChannelRequest.setAmount(transaction.getAmount());
         gsmaChannelRequest.setCurrency(transaction.getCurrency());
-        gsmaChannelRequest.setRequestingLei("ibank-usa");
-        gsmaChannelRequest.setReceivingLei("ibank-india");
+        gsmaChannelRequest.setRequestingLei(gsmaPayerTenant);
+        gsmaChannelRequest.setReceivingLei(gsmaPayeeFsp);
         GsmaParty creditParty = new GsmaParty();
         creditParty.setKey("msisdn");
         creditParty.setValue(transaction.getAccountNumber());

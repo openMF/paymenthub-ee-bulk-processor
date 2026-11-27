@@ -12,4 +12,3 @@ payment-mode:
     - id: "CLOSEDLOOP"
       type: "BULK"
       endpoint: "bulk_connector_{MODE}-{dfspid}"
-      debulkingDfspid: "lion"
